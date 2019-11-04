@@ -18,7 +18,7 @@ from keras.layers.convolutional import _Conv
 from keras.legacy import interfaces
 from keras.engine import InputSpec
 import tensorflow as tf
-import numpy as np 
+import numpy as np
 
 #################################################################################
 # Model Utils for Image Manipulation Classification
@@ -87,7 +87,7 @@ class Conv2DSymPadding( _Conv ) :
         if self.activation is not None:
             return self.activation(outputs)
         return outputs
-        
+
 class BayarConstraint( Constraint ) :
     def __init__( self ) :
         self.mask = None
@@ -142,20 +142,20 @@ class CombinedConv2D( Conv2DSymPadding ) :
             **kwargs)
         self.input_spec = InputSpec(ndim=4)
     def _get_srm_list( self ) :
-        # srm kernel 1                                                                                                                                
+        # srm kernel 1
         srm1 = np.zeros([5,5]).astype('float32')
         srm1[1:-1,1:-1] = np.array([[-1, 2, -1],
                                     [2, -4, 2],
                                     [-1, 2, -1]] )
         srm1 /= 4.
-        # srm kernel 2                                                                                                                                
+        # srm kernel 2
         srm2 = np.array([[-1, 2, -2, 2, -1],
                          [2, -6, 8, -6, 2],
                          [-2, 8, -12, 8, -2],
                          [2, -6, 8, -6, 2],
                          [-1, 2, -2, 2, -1]]).astype('float32')
         srm2 /= 12.
-        # srm kernel 3                                                                                                                                
+        # srm kernel 3
         srm3 = np.zeros([5,5]).astype('float32')
         srm3[2,1:-1] = np.array([1,-2,1])
         srm3 /= 2.
@@ -180,7 +180,7 @@ class CombinedConv2D( Conv2DSymPadding ) :
             raise( ValueError, 'The channel dimension of the inputs '
                              'should be defined. Found `None`.')
         input_dim = input_shape[channel_axis]
-        # 1. regular conv kernels, fully trainable                                                                                                    
+        # 1. regular conv kernels, fully trainable
         filters = self.filters - 9 - 3
         if filters >= 1 :
             regular_kernel_shape = self.kernel_size + (input_dim, filters)
@@ -191,16 +191,16 @@ class CombinedConv2D( Conv2DSymPadding ) :
                                           constraint=self.kernel_constraint)
         else :
             self.regular_kernel = None
-        # 2. SRM kernels, not trainable                                                                  
+        # 2. SRM kernels, not trainable
         self.srm_kernel = self._build_SRM_kernel()
-        # 3. bayar kernels, trainable but under constraint                                                                                            
+        # 3. bayar kernels, trainable but under constraint
         bayar_kernel_shape = self.kernel_size + (input_dim, 3)
         self.bayar_kernel = self.add_weight(shape=bayar_kernel_shape,
                                       initializer=self.kernel_initializer,
                                       name='bayar_kernel',
                                       regularizer=self.kernel_regularizer,
                                       constraint=BayarConstraint())
-        # 4. collect all kernels                                                                                                                      
+        # 4. collect all kernels
         if ( self.regular_kernel is not None ) :
             all_kernels = [ self.regular_kernel,
                             self.srm_kernel,
@@ -209,7 +209,7 @@ class CombinedConv2D( Conv2DSymPadding ) :
             all_kernels = [ self.srm_kernel,
                             self.bayar_kernel]
         self.kernel = K.concatenate( all_kernels, axis=-1 )
-        # Set input spec.                                                                                                                             
+        # Set input spec.
         self.input_spec = InputSpec(ndim=self.rank + 2,
                                     axes={channel_axis: input_dim})
         self.built = True
@@ -229,17 +229,17 @@ def create_featex_vgg16_base( type=1 ) :
     x = Conv2DSymPadding( nb_filters, (3,3), activation='relu', padding='same',  name=bname+'c2')( x )
     # block 3
     bname = 'b3'
-    nb_filters = 4 * base # 96
+    nb_filters = 4 * base # 128
     x = Conv2DSymPadding( nb_filters, (3,3), activation='relu', padding='same',  name=bname+'c1')( x )
     x = Conv2DSymPadding( nb_filters, (3,3), activation='relu', padding='same',  name=bname+'c2')( x )
     x = Conv2DSymPadding( nb_filters, (3,3), activation='relu', padding='same',  name=bname+'c3')( x )
     # block 4
     bname = 'b4'
-    nb_filters = 8 * base # 128
+    nb_filters = 8 * base # 256
     x = Conv2DSymPadding( nb_filters, (3,3), activation='relu', padding='same',  name=bname+'c1')( x )
     x = Conv2DSymPadding( nb_filters, (3,3), activation='relu', padding='same',  name=bname+'c2')( x )
     x = Conv2DSymPadding( nb_filters, (3,3), activation='relu', padding='same',  name=bname+'c3')( x )
-    # block 5/bottle-neck 
+    # block 5/bottle-neck
     bname = 'b5'
     x = Conv2DSymPadding( nb_filters, (3,3), activation='relu', padding='same',  name=bname+'c1')( x )
     x = Conv2DSymPadding( nb_filters, (3,3), activation='relu', padding='same',  name=bname+'c2')( x )
